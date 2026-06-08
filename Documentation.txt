@@ -50,3 +50,9 @@ Well lets get back to the rec function as I kinda had the break the flow for the
 Okay so the next function used in here is the new dataset listen we splitted the data and then now we need the splitted data to work again to make the new of the data which 
 Is been spliced right so now we do is we go in the recursion and then as the dataset is sorted its works perfectly fine for the splitting and then we pass the upside data and then the downside data and then our tree goes again 
 Returing back to the rec the recursion continues and we do it that way 
+
+
+
+There is this function known as function its job is to make the finishing blow and iteration of all the tree and also its have the to give out the answer like whatever the answer is comming out from the tree it gives us that it has only that job also we have a thing fixed here like if the result value is greater than the tree value we go left and vice a versa we go right 
+
+And the function lead is there this is used for just making the whole tree and adding all the leafs and declaring them leafs like when to stop at time of the iteration this is the one responsible for it 
