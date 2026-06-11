@@ -47,7 +47,7 @@ thread_local vector<float> final_ans(6) ;
 thread_local vector<float > hash_left ;
 thread_local vector< float > hash_right ; 
 thread_local unordered_map<float,int>used_variables ;
-thread_local unordered_map<float , int > visited ; 
+thread_local unordered_set<TreeNode*> visited ; 
 
 
 void leaf(TreeNode*tree  , unordered_map<float , pair<float , float>>& leaf_info   );
@@ -59,7 +59,7 @@ bool isnum (string datapart){
       return false ; 
      }
      bool dot = false ; 
-     for (int i = 0 ; i < datapart.size() ; i++ ){
+     for (size_t i = 0 ; i < datapart.size() ; i++ ){
      char st = datapart[i] ; 
      if (i == 0 ){
      if ( isdigit(st) ==  0 && st != '-' && st != '.') {
@@ -87,57 +87,75 @@ bool isnum (string datapart){
 
 
 
-
-
-vector<vector<float>> training_data(const string& fileee) {
-    vector<unordered_map<string,float>> hash;
-    string line;
-    vector<vector<float>> data;
-    vector<float> code;
-    ifstream file(fileee);
-    bool header_done = false;
+vector<vector<float>> data(const string& fileee) {
+   vector<unordered_map<string,float>>hash   ; 
+   string line  ;
+   int i = 0 ;
+   vector<vector<float>>data ; 
+   vector<float> code  ; 
+   ifstream file(fileee);
     while (getline(file, line)) {
-        stringstream ss(line);
-        string datapart;
-        vector<float> row;
-        bool skip = false;
-        int i = 0;
-        vector<string> parts;
-        while (getline(ss, datapart, ',')) {
-            parts.push_back(datapart);
+     stringstream ss(line);
+     string datapart;
+      vector<float> row ;
+      bool skip = false;  
+      int i = 0 ; 
+     while (getline(ss, datapart, ',')) {
+
+        if (datapart.size() == 0 ){
+            skip = true ; 
+            break ; 
         }
-        if (!header_done) {
-            for (int c = 0; c < (int)parts.size(); c++) {
-                hash.push_back(unordered_map<string,float>());
-                code.push_back(0.0);
+        if ( i >= hash.size()){
+             hash.push_back(unordered_map<string,float>()); 
+            code.push_back(0.0);
+        } 
+        if (isnum(datapart) == true){
+            row.push_back(stof(datapart)) ;
+        }
+        else {
+            if (hash[i].count(datapart)  == 0 ){
+                code[i] = code[i] + 1.0 ; 
+                hash[i][datapart] = code[i]  ; 
+                row.push_back(code[i]) ; 
             }
-            header_done = true;
-        }
-        for (int c = 0; c < (int)parts.size(); c++) {
-            if (parts[c].size() == 0) { skip = true; break; }
-            if (isnum(parts[c])) {
-                row.push_back(stof(parts[c]));
-            } else {
-                if (hash[c].count(parts[c]) == 0) {
-                    code[c] += 1.0;
-                    hash[c][parts[c]] = code[c];
-                    row.push_back(code[c]);
-                } else {
-                    row.push_back(hash[c][parts[c]]);
-                }
+            else {
+                row.push_back(hash[i][datapart])  ; 
             }
+
         }
-        if (!skip && !row.empty()) data.push_back(row);
+        i++ ; 
     }
-    return data;
+    if (skip == false ){
+        data.push_back(row) ; 
+    }
+} 
+return data ; 
+}
+
+
+vector<vector<float>> training_data(const string& filename) {
+    vector<vector<float>> data_i =  data(filename);
+    vector<vector<float>> train ; 
+    int m =(int)(data_i.size()* 0.8) ;
+    int start =  0; 
+    for ( int i = start ; i< m ; i++ ){ 
+        train.push_back(data_i[i]) ; 
+    }
+    return train ; 
 }
 
 
 
-
-
 vector<vector<float>> testing_data(const string& filename) {
-    return training_data(filename);
+    vector<vector<float>> data_i =  data(filename);
+    vector<vector<float>> test ; 
+    int m = data_i.size() ;
+    int start =  (int)(data_i.size()* 0.8) ; 
+    for ( int i = start ; i< m ; i++ ){ 
+        test.push_back(data_i[i]) ; 
+    }
+    return test ; 
 }
 
 float gini_impurity_subtree(vector<float>&counts ){
@@ -297,7 +315,7 @@ void perfect_variable(  unordered_map<float , pair<float , float>>&leaf_info ,  
         }
             pr.clear() ; 
             pos.clear() ; 
-        for (int j = 0  ; j < data_new[i].size() ; j++ ){
+        for (size_t j = 0  ; j < data_new[i].size() ; j++ ){
             pr.push_back({data_new[i][j].first , data_new[i][j].second.second}) ; 
 
         }
@@ -307,7 +325,7 @@ void perfect_variable(  unordered_map<float , pair<float , float>>&leaf_info ,  
         }
 
 
-        for (int k = 0 ; k< pr.size()-1 ; k++){
+        for (int k = 0 ; k< (int)pr.size()-1 ; k++){
          float   first = pr[k].first ; 
          float second  = pr[k+1].first ; 
          float mid  = ( first + second)/2 ; 
@@ -354,8 +372,8 @@ pair<vector<vector<pair<float,pair<float,float>>>>, vector<vector<pair<float,pai
     }
     vector<vector<pair<float,pair<float,float>>>>left_data(data.size()) ; 
     vector<vector<pair<float,pair<float,float>>>>right_data(data.size()) ; 
-    for (int i = 0 ; i < data.size() ; i++ ){
-        for (int j = 0 ; j < data[i].size() ; j++ ){
+    for (size_t i = 0 ; i < data.size() ; i++ ){
+        for (size_t j = 0 ; j < data[i].size() ; j++ ){
             pair<float,pair<float,float>>vec = {data[i][j].first , {data[i][j].second.first ,data[i][j].second.second}} ; 
             if (left_index[data[i][j].second.first] > 0 ){
                 left_data[i].push_back(vec) ; 
@@ -374,12 +392,12 @@ pair<vector<vector<pair<float,pair<float,float>>>>, vector<vector<pair<float,pai
 
 
 pair<TreeNode* , TreeNode* > rec(  unordered_map<float , pair<float , float>> &leaf_info , vector<vector<pair<float , pair<float,float>>>>  dta , int i  , int n  , TreeNode*tree , TreeNode* index ){
-    if (i > 5 || n == 0 || dta.empty() || dta[0].empty()){
+    if (i > 3 || n == 0 || dta.empty() || dta[0].empty()){
         if (dta.size() != 0 && dta[0].size() !=  0  ){
             float num = 0.0 ; 
             unordered_map<float , int > has  ;
             int maxi = INT_MIN ; 
-            for ( int l = 0 ; l < dta[0].size() ; l++ ){
+            for ( size_t l = 0 ; l < dta[0].size() ; l++ ){
                 has[dta[0][l].second.second]++ ; 
                  if ( has[dta[0][l].second.second] > maxi) { 
                     num = dta[0][l].second.second ; 
@@ -400,7 +418,7 @@ pair<TreeNode* , TreeNode* > rec(  unordered_map<float , pair<float , float>> &l
     float num = 0.0 ; 
     unordered_map<float , int > has  ;
     int maxi = INT_MIN ; 
-    for ( int l = 0 ; l < dta[0].size() ; l++ ){
+    for ( size_t l = 0 ; l < dta[0].size() ; l++ ){
         has[dta[0][l].second.second]++ ; 
             if ( has[dta[0][l].second.second] > maxi) { 
             num = dta[0][l].second.second ; 
@@ -473,30 +491,30 @@ void leaf(TreeNode*tree  ,  unordered_map<float , pair<float , float>>  & leaf_i
     if (tree->leaf_status_left != nullptr && tree->leaf_status_right != nullptr){
         return ; 
     }
-    if (visited[tree->value] > 1 ) { 
+    if (visited.count(tree) > 0   ) { 
         return;
     }
-    visited[tree->value]++ ; 
+    visited.insert(tree) ; 
+
+
     if (tree->left == nullptr && tree->leaf_status_left == nullptr ){
       tree->left = new TreeNode() ; 
       float val = leaf_info[tree->value].first ; 
       tree->left->value = val ; 
      tree->leaf_status_left = new float(1.0);
-     if (leaf_info.find(tree->left->value) == leaf_info.end()) {
             tree->left->leaf_status_left  = new float(1.0);
             tree->left->leaf_status_right = new float(1.0);
-        }
     }
+
+
 
      if  (tree->right ==  nullptr && tree->leaf_status_right == nullptr){
      tree->right = new TreeNode() ; 
       float val = leaf_info[tree->value].second ; 
       tree->right->value = val ;  
       tree->leaf_status_right = new float(1.0);
-      if (leaf_info.find(tree->right->value) == leaf_info.end()) {
             tree->right->leaf_status_left  = new float(1.0);
             tree->right->leaf_status_right = new float(1.0);
-        }
     }
 
      if (tree->left != nullptr){
@@ -581,7 +599,7 @@ float funtion(TreeNode*tree ,TreeNode*index ,  const vector<float> & test_data  
 vector<float> answ(TreeNode*tree , TreeNode* index , const vector<vector<float>>&test_data){
     vector<float>ans ; 
     ans.reserve(test_data.size()) ; 
-    for (int i = 0 ; i < test_data.size() ; i++){
+    for (size_t i = 0 ; i < test_data.size() ; i++){
       ans.push_back(funtion(tree , index , test_data[i]  )) ; 
     }
     return ans ; 
@@ -598,7 +616,7 @@ vector<float> random_forest(const string& filename){
     vector<vector<pair<float , pair<float,float>>>>  data_new = sorted_dataset(train_data) ; 
     unique_target(train_data) ; 
 
-    int no_of_trees = 15 ; 
+    int no_of_trees = 100 ; 
     int i = 0 ; 
     int lower_limit ; 
     int upper_limit ; 
@@ -627,9 +645,9 @@ vector<float> random_forest(const string& filename){
         }
 
        vector<vector<pair<float,pair<float,float>>>> data_for_descion_trees;
-      for (int j = 0 ; j < set_variables.size() ; j++ ){
+      for (size_t j = 0 ; j < set_variables.size() ; j++ ){
         vector<pair<float,pair<float,float>>>temp ; 
-          for (int k = 0  ; k < data_new[set_variables[j]].size() ; k++ ){
+          for (size_t k = 0  ; k < data_new[set_variables[j]].size() ; k++ ){
              int row_index = data_new[set_variables[j]][k].second.first ; 
              if (row_count[row_index] > 0  ){ 
                 for ( int a = 0 ; a < row_count[row_index] ; a++ ){ 
@@ -651,6 +669,7 @@ vector<float> random_forest(const string& filename){
     #pragma omp parallel for 
     for (int i = 0 ; i < no_of_trees ; i++){
         used_variables.clear() ; 
+        visited.clear() ; 
         pair<TreeNode* , TreeNode*> tree = decision_trees(data[i]) ; 
         pred_ans[i] = answ(tree.first , tree.second , test_data) ;
 
@@ -662,12 +681,12 @@ vector<float> random_forest(const string& filename){
 
     vector<float>random_forest_classifier_answer;
     random_forest_classifier_answer.reserve(test_data.size());
-    for (int j = 0; j < test_data.size(); j++){  
+    for (size_t j = 0; j < test_data.size(); j++){  
         unordered_map<float, int>hash_data;
         int maxi = -1;
         float ran = 0.0;
         
-        for (int i = 0; i < pred_ans.size(); i++){  
+        for (size_t i = 0; i < pred_ans.size(); i++){  
             hash_data[pred_ans[i][j]]++;
             if (hash_data[pred_ans[i][j]] > maxi){
                 maxi = hash_data[pred_ans[i][j]];
@@ -684,16 +703,16 @@ vector<float> random_forest(const string& filename){
 
 
 int main(int argc, char* argv[]) {
+    if (argc < 2){
+        return 1;
+    } 
     string filename = argv[1];
     vector<float> ans = random_forest(filename);
     vector<vector<float>>test_data = testing_data(filename) ; 
-    int diff  = 0 ; 
-    int sum = 0 ;  
-    for (int  i = 0; i < ans.size(); i++) {
-        sum = sum +  ans[i]  ;
-        diff += abs(test_data[i].back() - ans[i]);
+    float correct = 0;
+    for (size_t i = 0; i < ans.size(); i++) {
+        if (ans[i] == test_data[i].back()) correct++;
     }
-    int loss = diff / sum ; 
-    cout << 100 - loss;
+    cout << (correct / ans.size()) * 100;
     return 0;
 }
