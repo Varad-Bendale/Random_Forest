@@ -12,10 +12,11 @@ See suppose the data is like
 
 col-1 col-2 col-3 col-4    target 
 
-So now what we do is here is we are first of all storing all the initial positions of all the data points before all the sorting the positions we are storing those as we dont want to sort the process again and again then we keep is the real data which is actually there like the index represents the data that one and the next one is the 
+So now what we do is here is we are first of all storing all the initial positions of all the data points before all the sorting the positions we are storing those as we don't want to sort the process again and again then we keep is the real data which is actually there like the index represents the data that one and the next one is the 
 Target like what is the data representing that one I am speaking of 
 And then we just sort out all the dataset so then the greater the thing is we can identify that and if smaller we can identify that way both the things in the proper manner as we sort it out 
 We are also storing all the targets which are unique we store them in the global vector target things and we use it everywhere as well better for the thing also why not just take the set see its kind of personal thing don't like auto iterators and set requires auto iteraters only and the index iteration they dont really support so yeah had to use the set and then transfer it to the vector 
+Now see the best manner to make the dataset is just move the dataset by 90 degrees and then sort it out and then do it or operate on it 
 
 Okay as we come to the descion tree main function we are making two of the tree data stuture one of them is to store all the threshold like the variable which needs to be seen for the the best gini impurity and the next one which is the index stores which column to look for the finding the best input which is there 
 From here we call the function rec ( short form for recursion ) and this is majorly responsible to call out all the function which would give us the results and build the entire tree accordingly by calling all the recursions 
@@ -44,6 +45,7 @@ Largest right tree number
 Now we are using the buffer over here why so cuase see this function is just called insane amount of time and calling all the malloc and the freeing os the vector takes 
 A lot of time and we need optimisation so we just make a buffer a global variable and we are making almost 15 of those buffers why so would be explained in next few parts 
 We just make the buffer of the 5 point vector and then reuse it every single time for the iteration 
+Now see we kinda of put almost all the variables used in the buffer and then use it and just add the local thread so the race condition s can be avoided and we only keep the target things as a normal one cause its just there for the reference and its not changed further thats why a global variable it is 
 
 Okay after all of these we get the all the parts we need about all perfect variable in there dataset which is giving the least amount of the gini impurity 
 Well lets get back to the rec function as I kinda had the break the flow for the few of the functions which were called in here 
@@ -56,3 +58,11 @@ Returing back to the rec the recursion continues and we do it that way
 There is this function known as function its job is to make the finishing blow and iteration of all the tree and also its have the to give out the answer like whatever the answer is comming out from the tree it gives us that it has only that job also we have a thing fixed here like if the result value is greater than the tree value we go left and vice a versa we go right 
 
 And the function lead is there this is used for just making the whole tree and adding all the leafs and declaring them leafs like when to stop at time of the iteration this is the one responsible for it 
+See its like a safety net rec handles all the leafs definition and all of those earlier it was like rec just does the stuff it needs to do and then leaf would handle all the leaves making part but it kinda was failing so right now rec is made so that it handles and defines all the leafs and then leaf function is just kept for the safety if anything is missing or left out it catches it like that way 
+See if you see in the rec there are few conditions where like if the gini is low just return out but there needs a leaf na over there a node which tells whats in majority leaf was failing right over here so it's just better to add those conditions in rec itself 
+Okay now there was a bug which was happening in the earlier forms of the code which was it was going in recursive conditions again and again and the reason was I was just checking out the Hashmap but the infinite recursion was not been corrected on now just for imagination think like 5->(3,7) and 3->(2,5) it goes in recursion now there are few of the options like add the level of the tree but it breaks also there is to directly remove the tree value from the Hashmat but it is problematic if we go backtracking we dont find the thing so its better to just add the flags to these nodes so there is a new Hashmat added to this part now 
+
+
+
+Okay these things were about the descion trees but lets jump on the random forest now see now the very first thing which we do here is we need to randomly select the rows and the columns which need to be considered for the tree mind it duplicated rows are kinda of allowed in here as they benefit the forest to get the answer better also the number of columns choosing we have them inside a range from the square root of the number of columns to the number of columns why because way too less may just give us the worst tree which is just no good so we keep that limits 
+
