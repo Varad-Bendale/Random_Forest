@@ -12,7 +12,12 @@
 #include <climits>
 #include <cstdlib>
 #include <unordered_set>
+#include <ctime> 
+#include <string>
+#include <chrono>
+
 using namespace std;
+using namespace std::chrono;
 
 
 void perfect_variable(unordered_map<float,pair<float,float>> &leaf_info , const vector<vector<pair<float , pair<float,float>>>>& data_new);
@@ -46,7 +51,6 @@ thread_local vector<pair<float  , float>> pos ;
 thread_local vector<float> final_ans(6) ; 
 thread_local vector<float > hash_left ;
 thread_local vector< float > hash_right ; 
-thread_local unordered_map<float,int>used_variables ;
 thread_local unordered_set<TreeNode*> visited ; 
 
 
@@ -137,7 +141,7 @@ return data ;
 vector<vector<float>> training_data(const string& filename) {
     vector<vector<float>> data_i =  data(filename);
     vector<vector<float>> train ; 
-    int m =(int)(data_i.size()* 0.8) ;
+    int m =(int)(data_i.size()* 0.6) ;
     int start =  0; 
     for ( int i = start ; i< m ; i++ ){ 
         train.push_back(data_i[i]) ; 
@@ -151,7 +155,7 @@ vector<vector<float>> testing_data(const string& filename) {
     vector<vector<float>> data_i =  data(filename);
     vector<vector<float>> test ; 
     int m = data_i.size() ;
-    int start =  (int)(data_i.size()* 0.8) ; 
+    int start =  (int)(data_i.size()* 0.4) ; 
     for ( int i = start ; i< m ; i++ ){ 
         test.push_back(data_i[i]) ; 
     }
@@ -278,8 +282,8 @@ void get_perfect( ){
       gini_end = gini_cmp ; 
       gini_left = ans[1] ; 
       gini_right = ans[2] ; 
-      left_leaf = target_things[(int)ans[4]] ; 
-      right_leaf = target_things[(int)ans[3]] ; 
+      left_leaf = target_things[(int)ans[3]] ; 
+      right_leaf = target_things[(int)ans[4]] ; 
      }
     }
         smallest_gini_imp[0] = num ;
@@ -310,9 +314,6 @@ void perfect_variable(  unordered_map<float , pair<float , float>>&leaf_info ,  
         if (data_new[i].size() <= 1 ){
             continue ; 
         }
-        if (used_variables[i] > 0) {
-            continue; 
-        }
             pr.clear() ; 
             pos.clear() ; 
         for (size_t j = 0  ; j < data_new[i].size() ; j++ ){
@@ -329,7 +330,7 @@ void perfect_variable(  unordered_map<float , pair<float , float>>&leaf_info ,  
          float   first = pr[k].first ; 
          float second  = pr[k+1].first ; 
          float mid  = ( first + second)/2 ; 
-         pos.push_back({mid , k+1 }) ; 
+         pos.push_back({mid , k }) ; 
         }
 
        get_perfect() ; 
@@ -349,8 +350,8 @@ void perfect_variable(  unordered_map<float , pair<float , float>>&leaf_info ,  
     final_ans[1] = num;
     final_ans[2] = variable_pos ;
     final_ans[3] = thresh_data_loc;
-    final_ans[4] = gini_right;
-    final_ans[5] = gini_left;
+    final_ans[4] = gini_left;
+    final_ans[5] = gini_right;
 
  leaf_info[num] = {left_leaf, right_leaf};
 }
@@ -392,7 +393,7 @@ pair<vector<vector<pair<float,pair<float,float>>>>, vector<vector<pair<float,pai
 
 
 pair<TreeNode* , TreeNode* > rec(  unordered_map<float , pair<float , float>> &leaf_info , vector<vector<pair<float , pair<float,float>>>>  dta , int i  , int n  , TreeNode*tree , TreeNode* index ){
-    if (i > 3 || n == 0 || dta.empty() || dta[0].empty()){
+    if (i > 13 || n == 0 || dta.empty() || dta[0].empty()){
         if (dta.size() != 0 && dta[0].size() !=  0  ){
             float num = 0.0 ; 
             unordered_map<float , int > has  ;
@@ -414,7 +415,7 @@ pair<TreeNode* , TreeNode* > rec(  unordered_map<float , pair<float , float>> &l
 
     perfect_variable(leaf_info , dta) ; 
 
-    if (final_ans[0] >= 99.0) {   
+ if (final_ans[0] <= 0.0) {  
     float num = 0.0 ; 
     unordered_map<float , int > has  ;
     int maxi = INT_MIN ; 
@@ -434,7 +435,6 @@ pair<TreeNode* , TreeNode* > rec(  unordered_map<float , pair<float , float>> &l
 
     tree->value = final_ans[1] ; 
     index->value = final_ans[2] ; 
-    used_variables[final_ans[2]]++ ; 
 
 
     pair<vector<vector<pair<float,pair<float,float>>>>, vector<vector<pair<float,pair<float,float>>>>>data_sm  = new_dataset(final_ans  , dta);
@@ -472,6 +472,7 @@ pair<TreeNode* , TreeNode*> decision_trees(const vector<vector<pair<float , pair
     TreeNode* index = new TreeNode() ; 
     int i  = 0 ; 
     int size = data_new[0].size() ; 
+    srand(time(0));
     rec(leaf_info , data_new , i , size , tree  , index ) ; 
     leaf(tree , leaf_info ) ; 
     return {tree , index} ; 
@@ -516,6 +517,7 @@ void leaf(TreeNode*tree  ,  unordered_map<float , pair<float , float>>  & leaf_i
             tree->right->leaf_status_left  = new float(1.0);
             tree->right->leaf_status_right = new float(1.0);
     }
+
 
      if (tree->left != nullptr){
      leaf (tree->left , leaf_info  ) ;
@@ -584,11 +586,11 @@ float funtion(TreeNode*tree ,TreeNode*index ,  const vector<float> & test_data  
     int feature_index = (int) index->value;
     float data = test_data[feature_index];
 
-     if (data >= tree->value  ){
-         return funtion(tree->left ,index->left ,  test_data    ) ; 
+     if (data > tree->value  ){
+         return funtion(tree->right ,index->right ,  test_data    ) ; 
      }
      else {
-         return funtion(tree->right , index->right , test_data   ) ; 
+         return funtion(tree->left , index->left , test_data   ) ; 
      }
 }
 
@@ -616,20 +618,19 @@ vector<float> random_forest(const string& filename){
     vector<vector<pair<float , pair<float,float>>>>  data_new = sorted_dataset(train_data) ; 
     unique_target(train_data) ; 
 
-    int no_of_trees = 100 ; 
+    int no_of_trees = 500 ; 
     int i = 0 ; 
     int lower_limit ; 
     int upper_limit ; 
     vector<vector<vector<pair<float,pair<float,float>>>> >data ; 
-
     while (i < no_of_trees){
      unordered_map<float , int>hash ; 
      lower_limit = sqrt(train_data[0].size()) ; 
      upper_limit = train_data[0].size() ;  
-     int no_of_variables = rand() % (upper_limit - lower_limit + 1) + lower_limit ; 
+     int no_of_variables = rand()  % (upper_limit - lower_limit + 1) + lower_limit ; 
      vector<int>set_variables ; 
       while (no_of_variables >  0 ){
-          int col = rand() % (upper_limit)   ; 
+          int col = rand()  % (upper_limit)   ; 
           if (hash[col] == 0 ){
            set_variables.push_back(col) ; 
            no_of_variables-- ; 
@@ -668,7 +669,6 @@ vector<float> random_forest(const string& filename){
     vector<vector<float>> pred_ans(no_of_trees);
     #pragma omp parallel for 
     for (int i = 0 ; i < no_of_trees ; i++){
-        used_variables.clear() ; 
         visited.clear() ; 
         pair<TreeNode* , TreeNode*> tree = decision_trees(data[i]) ; 
         pred_ans[i] = answ(tree.first , tree.second , test_data) ;
@@ -703,16 +703,36 @@ vector<float> random_forest(const string& filename){
 
 
 int main(int argc, char* argv[]) {
-    if (argc < 2){
+    if (argc < 2) {
         return 1;
-    } 
-    string filename = argv[1];
-    vector<float> ans = random_forest(filename);
-    vector<vector<float>>test_data = testing_data(filename) ; 
-    float correct = 0;
-    for (size_t i = 0; i < ans.size(); i++) {
-        if (ans[i] == test_data[i].back()) correct++;
     }
-    cout << (correct / ans.size()) * 100;
+
+    string filename = argv[1];
+
+    auto start = high_resolution_clock::now();
+
+    vector<float> ans = random_forest(filename);
+
+    auto stop = high_resolution_clock::now();
+
+    vector<vector<float>> test_data = testing_data(filename);
+
+    float correct = 0;
+
+    for (size_t i = 0; i < ans.size(); i++) {
+        if (ans[i] == test_data[i].back())
+            correct++;
+    }
+
+    float  accuracy = (correct / ans.size()) * 100.0f;
+
+
+    auto duration =
+        duration_cast<milliseconds>(stop - start);
+
+    cout << "Accuracy: " << (int)accuracy << "%\n";
+    cout << "Training + Prediction Time: "
+         << duration.count() << " ms\n";
+
     return 0;
 }
